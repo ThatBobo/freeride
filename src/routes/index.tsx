@@ -5,7 +5,7 @@ import { Phone } from "@/components/game/Phone";
 import { SeatbeltWarning } from "@/components/game/SeatbeltWarning";
 import { useDriving } from "@/hooks/useDriving";
 import { useGameWorld } from "@/hooks/useGameWorld";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Smartphone, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,6 +35,7 @@ function Index() {
   const [destination, setDestination] = useState<string | null>(null);
   const [comfort, setComfort] = useState(100);
   const [bumped, setBumped] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
 
   const moving = Math.abs(driving.speed) > 1;
 
@@ -89,7 +90,7 @@ function Index() {
           </div>
         </header>
 
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
+        <div className="flex flex-col gap-6">
           <div
             className="relative min-h-[520px] flex-1 lg:min-h-[600px]"
             style={{ animation: bumped ? "world-bump 0.4s ease-in-out" : undefined }}
@@ -128,15 +129,38 @@ function Index() {
               }
             `}</style>
           </div>
+        </div>
+      </div>
 
-          <div className="flex justify-center lg:justify-start">
-            <Phone
-              passengers={passengers}
-              onInvite={toggleInvite}
-              destination={destination}
-              onNavigate={setDestination}
-            />
-          </div>
+      {/* Phone toggle button */}
+      <button
+        onClick={() => setPhoneOpen((o) => !o)}
+        aria-label={phoneOpen ? "Close phone" : "Open phone"}
+        className="fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-2xl text-primary-foreground shadow-[var(--shadow-soft)] transition-transform duration-200 hover:scale-110 active:scale-95"
+        style={{ background: "var(--gradient-primary)" }}
+      >
+        {phoneOpen ? <X className="h-6 w-6" /> : <Smartphone className="h-6 w-6" />}
+      </button>
+
+      {/* Sliding phone overlay */}
+      <div
+        onClick={() => setPhoneOpen(false)}
+        className={`fixed inset-0 z-40 bg-foreground/30 backdrop-blur-[2px] transition-opacity duration-300 ${
+          phoneOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+      <div
+        className={`fixed inset-x-0 bottom-0 z-40 flex justify-center transition-transform duration-500 ease-out ${
+          phoneOpen ? "translate-y-0" : "pointer-events-none translate-y-[110%]"
+        }`}
+      >
+        <div className="pb-4">
+          <Phone
+            passengers={passengers}
+            onInvite={toggleInvite}
+            destination={destination}
+            onNavigate={setDestination}
+          />
         </div>
       </div>
     </main>
