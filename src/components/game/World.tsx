@@ -65,7 +65,7 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden rounded-3xl border border-border"
+      className="relative h-full w-full overflow-hidden"
       style={{ background: SKY_GRADIENTS[timeOfDay] }}
       aria-label="Open world city view"
     >
