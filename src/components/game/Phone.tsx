@@ -142,7 +142,7 @@ function HomeScreen({
     <div className="flex h-full flex-col px-5 pt-4">
       <p className="font-display text-3xl font-extrabold leading-tight">Hey, rider</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        {passengers.length ? `${passengers.length} friend(s) riding with you` : "Cruising solo"}
+        {passengers.length ? `${passengers.length} friend(s) riding with you` : "Freeriding solo"}
       </p>
 
       <div className="mt-6 grid grid-cols-3 gap-4">
