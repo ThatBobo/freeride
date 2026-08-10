@@ -168,7 +168,7 @@ function TouchControls({
   );
 
   return (
-    <div className="absolute bottom-20 right-4 z-30 flex gap-2 lg:hidden">
+    <div className="absolute bottom-24 right-4 z-30 flex gap-2">
       <div className="flex flex-col gap-2">
         {btn("gas", "▲", "bg-primary/20")}
         {btn("brake", "▼", "bg-destructive/20")}
