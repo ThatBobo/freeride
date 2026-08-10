@@ -79,11 +79,11 @@ export function useDriving() {
 
       setState((prev) => {
         const k = keys.current;
-        const gas = k["arrowup"] || k["w"];
-        const brake = k["arrowdown"] || k["s"];
-        const left = k["arrowleft"] || k["a"];
-        const right = k["arrowright"] || k["d"];
-        const handbrake = k[" "];
+        const gas = !!(k["arrowup"] || k["w"]);
+        const brake = !!(k["arrowdown"] || k["s"]);
+        const left = !!(k["arrowleft"] || k["a"]);
+        const right = !!(k["arrowright"] || k["d"]);
+        const handbrake = !!k[" "];
 
         // Speed physics
         let speed = prev.speed;
@@ -151,7 +151,8 @@ export function useDriving() {
       right: "arrowright",
       handbrake: " ",
     };
-    keys.current[map[control]] = active;
+    const key = map[control];
+    if (key) keys.current[key] = active;
   }, []);
 
   return { state, setTouch };

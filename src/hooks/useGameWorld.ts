@@ -60,7 +60,7 @@ function spawnNPC(id: number, nearX: number, nearY: number): NPC {
     y: nearY + Math.sin((angle * Math.PI) / 180) * dist,
     heading: Math.random() * 360,
     speed: 20 + Math.random() * 40,
-    color: NPC_COLORS[id % NPC_COLORS.length],
+    color: NPC_COLORS[id % NPC_COLORS.length] ?? "oklch(0.78 0.14 25)",
     lane,
   };
 }
