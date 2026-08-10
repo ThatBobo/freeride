@@ -4,6 +4,7 @@ import { World } from "@/components/game/World";
 import { Phone } from "@/components/game/Phone";
 import { SeatbeltWarning } from "@/components/game/SeatbeltWarning";
 import { useDriving } from "@/hooks/useDriving";
+import { useGameWorld } from "@/hooks/useGameWorld";
 import { Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "An open-world cruiser: drive freely through a living city. Steering, gas, brake — you're in control.",
+          "An open-world cruiser: drive freely through a living city with day/night cycle, NPC traffic, and real landmarks.",
       },
       { property: "og:title", content: "Freeride City — Open-World Cruiser" },
       {
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { state: driving, setTouch } = useDriving();
+  const { state: gameWorld, zones } = useGameWorld(driving);
   const [buckled, setBuckled] = useState(false);
   const [passengers, setPassengers] = useState<string[]>([]);
   const [destination, setDestination] = useState<string | null>(null);
@@ -39,7 +41,7 @@ function Index() {
   // Bumps happen while driving. Unbuckled = you get shaken and lose comfort.
   useEffect(() => {
     const id = setInterval(() => {
-      if (Math.abs(driving.speed) < 5) return; // no bumps when parked
+      if (Math.abs(driving.speed) < 5) return;
       if (Math.random() > 0.45) return;
       if (buckled) {
         setComfort((c) => Math.min(100, c + 5));
@@ -83,7 +85,7 @@ function Index() {
           </div>
           <div className="glass-card flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold">
             <span className="h-2 w-2 rounded-full bg-accent animate-soft-pulse" />
-            12 players online
+            {gameWorld.npcs.length + 1} cars nearby
           </div>
         </header>
 
@@ -92,7 +94,13 @@ function Index() {
             className="relative min-h-[520px] flex-1 lg:min-h-[600px]"
             style={{ animation: bumped ? "world-bump 0.4s ease-in-out" : undefined }}
           >
-            <World driving={driving} passengers={passengers} moving={moving} />
+            <World
+              driving={driving}
+              passengers={passengers}
+              moving={moving}
+              gameWorld={gameWorld}
+              zones={zones}
+            />
             {!buckled && (
               <SeatbeltWarning
                 onBuckle={() => setBuckled(true)}
@@ -103,7 +111,7 @@ function Index() {
             {buckled && (
               <button
                 onClick={() => setBuckled(false)}
-                className="absolute right-4 top-4 z-30 rounded-full bg-card px-4 py-2 text-xs font-semibold shadow-[var(--shadow-soft)] transition-transform duration-200 hover:scale-105"
+                className="absolute right-4 top-16 z-30 rounded-full bg-card px-4 py-2 text-xs font-semibold shadow-[var(--shadow-soft)] transition-transform duration-200 hover:scale-105"
               >
                 Seatbelt: on · comfort {comfort}%
               </button>
