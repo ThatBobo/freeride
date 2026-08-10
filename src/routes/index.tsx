@@ -65,72 +65,55 @@ function Index() {
     setPassengers((p) => (p.includes(name) ? p.filter((n) => n !== name) : [...p, name]));
 
   return (
-    <main className="min-h-screen bg-background p-4 lg:p-8">
-      <div className="mx-auto max-w-[1400px]">
-        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 pb-5 sm:flex sm:flex-wrap sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <span
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl"
-              style={{ background: "var(--gradient-primary)" }}
-            >
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
-            </span>
-            <div className="min-w-0">
-              <h1 className="truncate font-display text-xl font-extrabold sm:text-2xl">
-                Freeride City
-              </h1>
-              <p className="truncate text-xs text-muted-foreground">
-                Open-world cruiser — you're in control.
-              </p>
-            </div>
-          </div>
-          <div className="glass-card flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold">
-            <span className="h-2 w-2 rounded-full bg-accent animate-soft-pulse" />
-            {gameWorld.npcs.length + 1} cars nearby
-          </div>
-        </header>
-
-        <div className="flex flex-col gap-6">
-          <div
-            className="relative min-h-[520px] flex-1 lg:min-h-[600px]"
-            style={{ animation: bumped ? "world-bump 0.4s ease-in-out" : undefined }}
-          >
-            <World
-              driving={driving}
-              passengers={passengers}
-              moving={moving}
-              gameWorld={gameWorld}
-              zones={zones}
-            />
-            {!buckled && (
-              <SeatbeltWarning
-                onBuckle={() => setBuckled(true)}
-                comfort={comfort}
-                bumped={bumped}
-              />
-            )}
-            {buckled && (
-              <button
-                onClick={() => setBuckled(false)}
-                className="absolute right-4 top-16 z-30 rounded-full bg-card px-4 py-2 text-xs font-semibold shadow-[var(--shadow-soft)] transition-transform duration-200 hover:scale-105"
-              >
-                Seatbelt: on · comfort {comfort}%
-              </button>
-            )}
-
-            {/* Mobile touch controls */}
-            <TouchControls setTouch={setTouch} />
-
-            <style>{`
-              @keyframes world-bump {
-                0%,100% { transform: translate(0,0) }
-                30% { transform: translate(-6px, 4px) }
-                70% { transform: translate(6px, -4px) }
-              }
-            `}</style>
-          </div>
-        </div>
+    <main className="fixed inset-0 overflow-hidden bg-background">
+      <div
+        className="absolute inset-0"
+        style={{ animation: bumped ? "world-bump 0.4s ease-in-out" : undefined }}
+      >
+        <World
+          driving={driving}
+          passengers={passengers}
+          moving={moving}
+          gameWorld={gameWorld}
+          zones={zones}
+        />
       </div>
+
+      {/* Minimal HUD */}
+      <div className="pointer-events-none absolute left-4 top-4 z-30 flex items-center gap-2">
+        <span
+          className="grid h-9 w-9 place-items-center rounded-xl"
+          style={{ background: "var(--gradient-primary)" }}
+        >
+          <Sparkles className="h-4 w-4 text-primary-foreground" />
+        </span>
+        <span className="glass-card rounded-full px-3 py-1.5 text-xs font-semibold">
+          {gameWorld.npcs.length + 1} cars nearby
+        </span>
+      </div>
+
+      {!buckled && (
+        <SeatbeltWarning onBuckle={() => setBuckled(true)} comfort={comfort} bumped={bumped} />
+      )}
+      {buckled && (
+        <button
+          onClick={() => setBuckled(false)}
+          className="absolute right-4 top-4 z-30 rounded-full bg-card px-4 py-2 text-xs font-semibold shadow-[var(--shadow-soft)] transition-transform duration-200 hover:scale-105"
+        >
+          Seatbelt: on · comfort {comfort}%
+        </button>
+      )}
+
+      <TouchControls setTouch={setTouch} />
+
+      <style>{`
+        @keyframes world-bump {
+          0%,100% { transform: translate(0,0) }
+          30% { transform: translate(-6px, 4px) }
+          70% { transform: translate(6px, -4px) }
+        }
+      `}</style>
+
 
       {/* Phone toggle button */}
       <button
