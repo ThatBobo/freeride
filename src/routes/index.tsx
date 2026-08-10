@@ -30,22 +30,47 @@ function Index() {
   const [passengers, setPassengers] = useState<string[]>([]);
   const [destination, setDestination] = useState<string | null>(null);
   const [speed, setSpeed] = useState(0);
+  const [comfort, setComfort] = useState(100);
+  const [bumped, setBumped] = useState(false);
 
-  const moving = buckled;
+  // Cars always auto-drive — the seatbelt never stops the car.
+  const moving = true;
 
   useEffect(() => {
     const id = setInterval(() => {
       setSpeed((s) => {
-        const target = moving ? (destination ? 52 : 34) : 0;
+        const target = destination ? 52 : 34;
         if (s === target) return s;
         return s < target ? Math.min(target, s + 3) : Math.max(target, s - 6);
       });
     }, 220);
     return () => clearInterval(id);
-  }, [moving, destination]);
+  }, [destination]);
+
+  // Bumps happen while driving. Unbuckled = you get shaken and lose comfort.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (Math.random() > 0.45) return;
+      if (buckled) {
+        setComfort((c) => Math.min(100, c + 5));
+        return;
+      }
+      setBumped(true);
+      setComfort((c) => Math.max(0, c - 8));
+      setTimeout(() => setBumped(false), 450);
+    }, 3000);
+    return () => clearInterval(id);
+  }, [buckled]);
+
+  useEffect(() => {
+    if (!buckled) return;
+    const id = setInterval(() => setComfort((c) => Math.min(100, c + 4)), 2500);
+    return () => clearInterval(id);
+  }, [buckled]);
 
   const toggleInvite = (name: string) =>
     setPassengers((p) => (p.includes(name) ? p.filter((n) => n !== name) : [...p, name]));
+
 
   return (
     <main className="min-h-screen bg-background p-4 lg:p-8">
