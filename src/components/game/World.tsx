@@ -48,7 +48,12 @@ function formatClock(minutes: number): string {
 
 export function World({ driving, passengers, moving, gameWorld, zones }: WorldProps) {
   const { speed, steering, position, heading } = driving;
-  const { timeOfDay, clockMinutes, npcs, currentZone } = gameWorld;
+  const {
+    timeOfDay = "day",
+    clockMinutes = 600,
+    npcs = [],
+    currentZone = null,
+  } = gameWorld ?? ({} as Partial<GameWorldState>);
 
   // World offset: move the world opposite to car position
   const worldOffsetX = -position.x * 8;
