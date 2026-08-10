@@ -3,22 +3,23 @@ import { useEffect, useState } from "react";
 import { World } from "@/components/game/World";
 import { Phone } from "@/components/game/Phone";
 import { SeatbeltWarning } from "@/components/game/SeatbeltWarning";
+import { useDriving } from "@/hooks/useDriving";
 import { Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Freeride City — Multiplayer Cruise & Chat" },
+      { title: "Freeride City — Open-World Cruiser" },
       {
         name: "description",
         content:
-          "A friendly multiplayer freeride world: self-driving cars, an in-game phone with calls, maps and car invites. No missions, just exploring together.",
+          "An open-world cruiser: drive freely through a living city. Steering, gas, brake — you're in control.",
       },
-      { property: "og:title", content: "Freeride City — Multiplayer Cruise & Chat" },
+      { property: "og:title", content: "Freeride City — Open-World Cruiser" },
       {
         property: "og:description",
         content:
-          "Cruise a safe, auto-driving city with friends. Call, navigate and invite riders from your in-game smartphone.",
+          "Cruise a living city with real driving controls. Explore, hang out, and enjoy the ride.",
       },
     ],
   }),
@@ -26,30 +27,19 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { state: driving, setTouch } = useDriving();
   const [buckled, setBuckled] = useState(false);
   const [passengers, setPassengers] = useState<string[]>([]);
   const [destination, setDestination] = useState<string | null>(null);
-  const [speed, setSpeed] = useState(0);
   const [comfort, setComfort] = useState(100);
   const [bumped, setBumped] = useState(false);
 
-  // Cars always auto-drive — the seatbelt never stops the car.
-  const moving = true;
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSpeed((s) => {
-        const target = destination ? 52 : 34;
-        if (s === target) return s;
-        return s < target ? Math.min(target, s + 3) : Math.max(target, s - 6);
-      });
-    }, 220);
-    return () => clearInterval(id);
-  }, [destination]);
+  const moving = Math.abs(driving.speed) > 1;
 
   // Bumps happen while driving. Unbuckled = you get shaken and lose comfort.
   useEffect(() => {
     const id = setInterval(() => {
+      if (Math.abs(driving.speed) < 5) return; // no bumps when parked
       if (Math.random() > 0.45) return;
       if (buckled) {
         setComfort((c) => Math.min(100, c + 5));
@@ -60,7 +50,7 @@ function Index() {
       setTimeout(() => setBumped(false), 450);
     }, 3000);
     return () => clearInterval(id);
-  }, [buckled]);
+  }, [buckled, driving.speed]);
 
   useEffect(() => {
     if (!buckled) return;
@@ -70,7 +60,6 @@ function Index() {
 
   const toggleInvite = (name: string) =>
     setPassengers((p) => (p.includes(name) ? p.filter((n) => n !== name) : [...p, name]));
-
 
   return (
     <main className="min-h-screen bg-background p-4 lg:p-8">
@@ -88,7 +77,7 @@ function Index() {
                 Freeride City
               </h1>
               <p className="truncate text-xs text-muted-foreground">
-                Explore, cruise and hang out — no missions, ever.
+                Open-world cruiser — you're in control.
               </p>
             </div>
           </div>
@@ -103,7 +92,7 @@ function Index() {
             className="relative min-h-[520px] flex-1 lg:min-h-[600px]"
             style={{ animation: bumped ? "world-bump 0.4s ease-in-out" : undefined }}
           >
-            <World moving={moving} speed={speed} passengers={passengers} />
+            <World driving={driving} passengers={passengers} moving={moving} />
             {!buckled && (
               <SeatbeltWarning
                 onBuckle={() => setBuckled(true)}
@@ -114,11 +103,15 @@ function Index() {
             {buckled && (
               <button
                 onClick={() => setBuckled(false)}
-                className="absolute right-4 top-4 rounded-full bg-card px-4 py-2 text-xs font-semibold shadow-[var(--shadow-soft)] transition-transform duration-200 hover:scale-105"
+                className="absolute right-4 top-4 z-30 rounded-full bg-card px-4 py-2 text-xs font-semibold shadow-[var(--shadow-soft)] transition-transform duration-200 hover:scale-105"
               >
                 Seatbelt: on · comfort {comfort}%
               </button>
             )}
+
+            {/* Mobile touch controls */}
+            <TouchControls setTouch={setTouch} />
+
             <style>{`
               @keyframes world-bump {
                 0%,100% { transform: translate(0,0) }
@@ -127,7 +120,6 @@ function Index() {
               }
             `}</style>
           </div>
-
 
           <div className="flex justify-center lg:justify-start">
             <Phone
@@ -140,5 +132,36 @@ function Index() {
         </div>
       </div>
     </main>
+  );
+}
+
+function TouchControls({
+  setTouch,
+}: {
+  setTouch: (control: "gas" | "brake" | "left" | "right" | "handbrake", active: boolean) => void;
+}) {
+  const btn = (control: "gas" | "brake" | "left" | "right" | "handbrake", label: string, cls: string) => (
+    <button
+      className={`flex h-14 w-14 items-center justify-center rounded-2xl glass-card text-sm font-bold transition-transform active:scale-90 ${cls}`}
+      onPointerDown={(e) => { e.preventDefault(); setTouch(control, true); }}
+      onPointerUp={() => setTouch(control, false)}
+      onPointerLeave={() => setTouch(control, false)}
+      onPointerCancel={() => setTouch(control, false)}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="absolute bottom-20 right-4 z-30 flex gap-2 lg:hidden">
+      <div className="flex flex-col gap-2">
+        {btn("gas", "▲", "bg-primary/20")}
+        {btn("brake", "▼", "bg-destructive/20")}
+      </div>
+      <div className="flex flex-col gap-2">
+        {btn("left", "◀", "")}
+        {btn("right", "▶", "")}
+      </div>
+    </div>
   );
 }
