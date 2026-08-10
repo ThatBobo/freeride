@@ -99,18 +99,35 @@ function Index() {
         </header>
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
-          <div className="relative min-h-[520px] flex-1 lg:min-h-[600px]">
+          <div
+            className="relative min-h-[520px] flex-1 lg:min-h-[600px]"
+            style={{ animation: bumped ? "world-bump 0.4s ease-in-out" : undefined }}
+          >
             <World moving={moving} speed={speed} passengers={passengers} />
-            {!buckled && <SeatbeltWarning onBuckle={() => setBuckled(true)} />}
+            {!buckled && (
+              <SeatbeltWarning
+                onBuckle={() => setBuckled(true)}
+                comfort={comfort}
+                bumped={bumped}
+              />
+            )}
             {buckled && (
               <button
                 onClick={() => setBuckled(false)}
                 className="absolute right-4 top-4 rounded-full bg-card px-4 py-2 text-xs font-semibold shadow-[var(--shadow-soft)] transition-transform duration-200 hover:scale-105"
               >
-                Seatbelt: on
+                Seatbelt: on · comfort {comfort}%
               </button>
             )}
+            <style>{`
+              @keyframes world-bump {
+                0%,100% { transform: translate(0,0) }
+                30% { transform: translate(-6px, 4px) }
+                70% { transform: translate(6px, -4px) }
+              }
+            `}</style>
           </div>
+
 
           <div className="flex justify-center lg:justify-start">
             <Phone
