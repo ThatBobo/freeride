@@ -5,7 +5,7 @@ import { Phone } from "@/components/game/Phone";
 import { SeatbeltWarning } from "@/components/game/SeatbeltWarning";
 import { useDriving } from "@/hooks/useDriving";
 import { useGameWorld } from "@/hooks/useGameWorld";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Smartphone, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,6 +35,7 @@ function Index() {
   const [destination, setDestination] = useState<string | null>(null);
   const [comfort, setComfort] = useState(100);
   const [bumped, setBumped] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
 
   const moving = Math.abs(driving.speed) > 1;
 
