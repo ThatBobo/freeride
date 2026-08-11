@@ -275,15 +275,18 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
   );
 }
 
-// Scattered buildings, kept clear of the road corridor
-const BUILDINGS_DATA = [
-  { x: -180, y: -200, h: 24 }, { x: -140, y: -100, h: 20 }, { x: -100, y: -250, h: 15 },
-  { x: -60, y: -150, h: 26 }, { x: -80, y: 50, h: 18 }, { x: -120, y: 200, h: 30 },
-  { x: -160, y: 100, h: 14 }, { x: -50, y: 300, h: 22 }, { x: -180, y: 0, h: 28 },
-  { x: 60, y: -150, h: 16 }, { x: 80, y: 50, h: 24 },
-  { x: 120, y: -200, h: 13 }, { x: 180, y: 100, h: 20 }, { x: 140, y: 250, h: 16 },
-  { x: 50, y: 300, h: 25 }, { x: 100, y: -50, h: 18 },
-];
+// City blocks in screen px, kept clear of the 280px road corridor
+const BUILDINGS_DATA = (() => {
+  const out: { x: number; y: number; h: number }[] = [];
+  const cols = [-520, -400, -280, 280, 400, 520];
+  for (let ci = 0; ci < cols.length; ci++) {
+    for (let r = -4; r <= 4; r++) {
+      const seed = (ci * 13 + r * 7 + 40) % 11;
+      out.push({ x: cols[ci] + (seed % 3) * 10, y: r * 150 + seed * 6, h: 12 + seed * 2 });
+    }
+  }
+  return out;
+})();
 
 function timeOfDayEmoji(t: TimeOfDay): string {
   return { dawn: "🌅", day: "☀️", dusk: "🌆", night: "🌙" }[t];
