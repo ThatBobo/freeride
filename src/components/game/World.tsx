@@ -279,10 +279,10 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
 const BUILDINGS_DATA = (() => {
   const out: { x: number; y: number; h: number }[] = [];
   const cols = [-520, -400, -280, 280, 400, 520];
-  for (let ci = 0; ci < cols.length; ci++) {
+  for (const col of cols) {
     for (let r = -4; r <= 4; r++) {
-      const seed = (ci * 13 + r * 7 + 40) % 11;
-      out.push({ x: cols[ci] + (seed % 3) * 10, y: r * 150 + seed * 6, h: 12 + seed * 2 });
+      const seed = (Math.abs(col) / 40 + r * 7 + 40) % 11;
+      out.push({ x: col + (seed % 3) * 10, y: r * 150 + seed * 6, h: 12 + seed * 2 });
     }
   }
   return out;
