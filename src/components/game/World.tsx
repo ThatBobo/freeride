@@ -192,15 +192,10 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
           </div>
         ))}
 
-        {/* Grass */}
-        <div
-          className="absolute"
-          style={{
-            inset: "0",
-            background: GRASS_COLORS[timeOfDay],
-            clipPath: "polygon(0 55%, 100% 55%, 100% 100%, 0 100%)",
-          }}
-        />
+        {/* Grass — left of road */}
+        <div className="absolute" style={{ inset: "0", background: GRASS_COLORS[timeOfDay], clipPath: "polygon(0 0, 36% 0, 36% 100%, 0 100%)" }} />
+        {/* Grass — right of road */}
+        <div className="absolute" style={{ inset: "0", background: GRASS_COLORS[timeOfDay], clipPath: "polygon(64% 0, 100% 0, 100% 100%, 64% 100%)" }} />
 
         {/* Road */}
         <div
@@ -208,11 +203,11 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
           style={{
             inset: "0",
             background: ROAD_COLORS[timeOfDay],
-            clipPath: "polygon(0 28%, 100% 28%, 100% 56%, 0 56%)",
+            clipPath: "polygon(36% 0, 64% 0, 64% 100%, 36% 100%)",
           }}
         >
           <div
-            className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 road-dashes opacity-80"
+            className="absolute inset-y-0 left-1/2 w-1.5 -translate-x-1/2 road-dashes opacity-80"
             style={{
               animationDuration: speed > 5 ? `${Math.max(0.3, 1.2 / (Math.abs(speed) / 30))}s` : "0s",
               animationPlayState: Math.abs(speed) > 1 ? "running" : "paused",
@@ -253,10 +248,10 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="absolute h-0.5 w-20 bg-card/30"
+              className="absolute w-0.5 h-20 bg-card/30"
               style={{
-                top: `${20 + i * 12}%`,
-                left: "-5%",
+                left: `${20 + i * 12}%`,
+                top: "110%",
                 animation: `speed-line ${0.3 + (i % 3) * 0.1}s linear infinite`,
                 animationDelay: `${i * 0.05}s`,
               }}
@@ -268,7 +263,7 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
       {/* Player car — centered, rotates with heading */}
       <div
         className="absolute left-1/2 top-[50%] z-20"
-        style={{ transform: `translate(-50%, -50%) rotate(${heading}deg)` }}
+        style={{ transform: `translate(-50%, -50%) rotate(${heading - 90}deg)` }}
       >
         <div
           className="relative"
@@ -376,7 +371,7 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
 
       <style>{`
         @keyframes world-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-        @keyframes speed-line { from { left: -5%; } to { left: 110%; } }
+        @keyframes speed-line { from { top: 110%; } to { top: -10%; } }
       `}</style>
     </div>
   );
@@ -384,12 +379,14 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
 
 // Scattered buildings data
 const BUILDINGS_DATA = [
-  { x: -180, y: -60, h: 24 }, { x: -140, y: -50, h: 20 }, { x: -100, y: -55, h: 15 },
-  { x: -60, y: -45, h: 26 }, { x: -20, y: -50, h: 18 }, { x: 20, y: -55, h: 30 },
-  { x: 60, y: -40, h: 14 }, { x: 100, y: -50, h: 22 }, { x: 140, y: -45, h: 17 },
-  { x: 180, y: -55, h: 28 }, { x: -160, y: 80, h: 16 }, { x: -120, y: 85, h: 24 },
-  { x: -80, y: 75, h: 13 }, { x: 80, y: 80, h: 20 }, { x: 120, y: 85, h: 16 },
-  { x: 160, y: 75, h: 25 },
+  // Left of road (negative x), spread along y (north-south)
+  { x: -180, y: -200, h: 24 }, { x: -140, y: -100, h: 20 }, { x: -100, y: -250, h: 15 },
+  { x: -60, y: -150, h: 26 }, { x: -80, y: 50, h: 18 }, { x: -120, y: 200, h: 30 },
+  { x: -160, y: 100, h: 14 }, { x: -50, y: 300, h: 22 }, { x: -180, y: 0, h: 28 },
+  // Right of road (positive x), spread along y
+  { x: 60, y: -150, h: 16 }, { x: 80, y: 50, h: 24 },
+  { x: 120, y: -200, h: 13 }, { x: 180, y: 100, h: 20 }, { x: 140, y: 250, h: 16 },
+  { x: 50, y: 300, h: 25 }, { x: 100, y: -50, h: 18 },
 ];
 
 function timeOfDayEmoji(t: TimeOfDay): string {
