@@ -119,9 +119,9 @@ export function useDriving() {
         }
 
         // Heading changes based on steering and speed (more speed = more turn)
-        const speedFactor = Math.min(1, Math.abs(speed) / 40);
+        const speedFactor = Math.min(1.2, Math.max(0.15, Math.abs(speed) / 25));
         const heading =
-          (prev.heading + steering * TURN_FACTOR * speedFactor * dt * 60 * Math.sign(speed || 1)) % 360;
+          ((prev.heading + steering * TURN_FACTOR * speedFactor * dt * 60 * Math.sign(speed || 1)) % 360 + 360) % 360;
 
         // Position update: convert speed to world units
         // 1 km/h ≈ 0.5 world units / second for a nice visual feel
