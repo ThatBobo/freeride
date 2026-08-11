@@ -5,7 +5,7 @@ import { Phone } from "@/components/game/Phone";
 import { SeatbeltWarning } from "@/components/game/SeatbeltWarning";
 import { useDriving } from "@/hooks/useDriving";
 import { useGameWorld } from "@/hooks/useGameWorld";
-import { Sparkles, Smartphone, X } from "lucide-react";
+import { Smartphone, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -78,30 +78,19 @@ function Index() {
         />
       </div>
 
-      {/* Minimal HUD */}
-      <div className="pointer-events-none absolute left-4 top-4 z-30 flex items-center gap-2">
-        <span
-          className="grid h-9 w-9 place-items-center rounded-xl"
-          style={{ background: "var(--gradient-primary)" }}
-        >
-          <Sparkles className="h-4 w-4 text-primary-foreground" />
-        </span>
-        <span className="glass-card rounded-full px-3 py-1.5 text-xs font-semibold">
-          {gameWorld.npcs.length + 1} cars nearby
-        </span>
-      </div>
-
       {!buckled && (
         <SeatbeltWarning onBuckle={() => setBuckled(true)} comfort={comfort} bumped={bumped} />
       )}
       {buckled && (
         <button
           onClick={() => setBuckled(false)}
-          className="absolute right-4 top-4 z-30 rounded-full bg-card px-4 py-2 text-xs font-semibold shadow-[var(--shadow-soft)] transition-transform duration-200 hover:scale-105"
+          className="hud-panel absolute left-1/2 top-20 z-30 -translate-x-1/2 rounded-xl px-4 py-2 text-[11px] font-semibold transition-transform duration-200 hover:scale-105"
         >
-          Seatbelt: on · comfort {comfort}%
+          <span className="hud-label mr-2">Belt</span>
+          Fastened · comfort {comfort}%
         </button>
       )}
+
 
       {/* Touch controls removed — keyboard only. Car stays centered. */}
 
