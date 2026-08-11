@@ -224,7 +224,7 @@
 }
 @keyframes dash-move {
   to {
-    background-position-y: -80px;
+    background-position-x: -80px;
   }
 }
 
@@ -237,11 +237,11 @@
 
 @utility road-dashes {
   background-image: repeating-linear-gradient(
-    0deg,
+    90deg,
     var(--road-line) 0 26px,
     transparent 26px 80px
   );
-  background-size: 100% 80px;
+  background-size: 80px 100%;
   animation: dash-move 1.2s linear infinite;
 }
 

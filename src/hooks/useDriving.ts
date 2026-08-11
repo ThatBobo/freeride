@@ -38,7 +38,7 @@ export function useDriving() {
   const [state, setState] = useState<DrivingState>({
     speed: 0,
     steering: 0,
-    heading: 0,
+    heading: 90,  // Start facing east (along the road), not north (up)
     position: { x: 0, y: 0 },
     gas: false,
     brake: false,
