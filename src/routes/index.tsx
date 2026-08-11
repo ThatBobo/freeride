@@ -39,7 +39,6 @@ function Index() {
 
   const moving = Math.abs(driving.speed) > 1;
 
-  // Bumps happen while driving. Unbuckled = you get shaken and lose comfort.
   useEffect(() => {
     const id = setInterval(() => {
       if (Math.abs(driving.speed) < 5) return;
@@ -104,7 +103,7 @@ function Index() {
         </button>
       )}
 
-      <TouchControls setTouch={setTouch} />
+      {/* Touch controls removed — keyboard only. Car stays centered. */}
 
       <style>{`
         @keyframes world-bump {
@@ -113,7 +112,6 @@ function Index() {
           70% { transform: translate(6px, -4px) }
         }
       `}</style>
-
 
       {/* Phone toggle button */}
       <button
@@ -147,36 +145,5 @@ function Index() {
         </div>
       </div>
     </main>
-  );
-}
-
-function TouchControls({
-  setTouch,
-}: {
-  setTouch: (control: "gas" | "brake" | "left" | "right" | "handbrake", active: boolean) => void;
-}) {
-  const btn = (control: "gas" | "brake" | "left" | "right" | "handbrake", label: string, cls: string) => (
-    <button
-      className={`flex h-14 w-14 items-center justify-center rounded-2xl glass-card text-sm font-bold transition-transform active:scale-90 ${cls}`}
-      onPointerDown={(e) => { e.preventDefault(); setTouch(control, true); }}
-      onPointerUp={() => setTouch(control, false)}
-      onPointerLeave={() => setTouch(control, false)}
-      onPointerCancel={() => setTouch(control, false)}
-    >
-      {label}
-    </button>
-  );
-
-  return (
-    <div className="absolute bottom-24 right-4 z-30 flex gap-2">
-      <div className="flex flex-col gap-2">
-        {btn("gas", "▲", "bg-primary/20")}
-        {btn("brake", "▼", "bg-destructive/20")}
-      </div>
-      <div className="flex flex-col gap-2">
-        {btn("left", "◀", "")}
-        {btn("right", "▶", "")}
-      </div>
-    </div>
   );
 }

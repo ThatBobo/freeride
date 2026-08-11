@@ -268,7 +268,6 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
         <div
           className="relative"
           style={{
-            animation: moving ? "world-bob 0.6s ease-in-out infinite" : undefined,
           }}
         >
           <span className="absolute -inset-6 rounded-full bg-accent/25 animate-ring-ping" />
@@ -348,30 +347,12 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
         </div>
       </div>
 
-      {/* Steering indicator bar */}
-      <div className="absolute bottom-4 right-4 z-30 glass-card rounded-2xl px-4 py-3">
-        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Steering</p>
-        <div className="mt-1 h-2 w-24 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-100"
-            style={{
-              width: `${Math.abs(steering) * 50}%`,
-              marginLeft: steering < 0 ? `${50 - Math.abs(steering) * 50}%` : "50%",
-            }}
-          />
-        </div>
-      </div>
+      
 
-      {/* Controls hint */}
-      <div className="absolute bottom-20 left-1/2 z-30 -translate-x-1/2 text-center">
-        <p className="text-[10px] font-medium text-muted-foreground/60">
-          WASD / Arrows to drive · Space = handbrake
-        </p>
-      </div>
+      
 
       <style>{`
-        @keyframes world-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-        @keyframes speed-line { from { top: 110%; } to { top: -10%; } }
+                @keyframes speed-line { from { top: 110%; } to { top: -10%; } }
       `}</style>
     </div>
   );
