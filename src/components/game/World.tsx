@@ -85,8 +85,8 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
             key={i}
             className="absolute rounded-md"
             style={{
-              left: `calc(50% + ${b.x * 8}px)`,
-              top: `calc(50% + ${b.y * 8}px)`,
+              left: `calc(50% + ${b.x}px)`,
+              top: `calc(50% + ${b.y}px)`,
               width: `${28 + (b.h % 5) * 8}px`,
               height: `${28 + (b.h % 7) * 8}px`,
               transform: "translate(-50%, -50%)",
