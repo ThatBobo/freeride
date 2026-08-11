@@ -58,7 +58,6 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
   // World offset: move the world opposite to car position
   const worldOffsetX = -position.x * 8;
   const worldOffsetY = -position.y * 8;
-  const carRotation = heading;
   const isReversing = speed < -1;
   const speedLines = Math.abs(speed) > 30;
   const isNight = timeOfDay === "night";
@@ -123,7 +122,7 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
       {/* Scrolling world layer */}
       <div
         className="absolute inset-0"
-        style={{ transform: `translate(${worldOffsetX}px, ${worldOffsetY}px)` }}
+        style={{ transform: `rotate(${-heading}deg) translate(${worldOffsetX}px, ${worldOffsetY}px)` }}
       >
         {/* Zones — landmarks in the world */}
         {zones.map((zone) => {
@@ -266,10 +265,10 @@ export function World({ driving, passengers, moving, gameWorld, zones }: WorldPr
         </div>
       )}
 
-      {/* Player car — centered, rotates with heading */}
+      {/* Player car — centered, always faces forward */}
       <div
         className="absolute left-1/2 top-[50%] z-20"
-        style={{ transform: `translate(-50%, -50%) rotate(${carRotation}deg)` }}
+        style={{ transform: `translate(-50%, -50%)` }}
       >
         <div
           className="relative"
