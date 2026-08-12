@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type { DrivingState } from "@/hooks/useDriving";
 import type { GameWorldState, Zone, TimeOfDay } from "@/hooks/useGameWorld";
 
@@ -586,7 +586,7 @@ function CarSprite({ color, night }: { color: string; night: boolean }) {
   );
 }
 
-function PlayerCar({ night, braking, boost }: { night: boolean; braking: boolean; boost: boolean }) {
+const PlayerCar = memo(function PlayerCar({ night, braking, boost }: { night: boolean; braking: boolean; boost: boolean }) {
   const tail = braking ? "oklch(0.68 0.26 28)" : "oklch(0.5 0.2 28)";
   return (
     <div className="relative" style={{ width: 220, height: 132 }}>
@@ -653,7 +653,7 @@ function PlayerCar({ night, braking, boost }: { night: boolean; braking: boolean
       <div className="absolute bottom-0 right-[2px] h-[26px] w-[34px] rounded-[8px] bg-[oklch(0.16_0.01_260)] shadow-[inset_0_3px_0_oklch(1_0_0_/_0.12)]" />
     </div>
   );
-}
+});
 
 /* ---------------- HUD widgets ---------------- */
 
