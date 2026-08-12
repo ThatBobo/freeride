@@ -121,7 +121,7 @@ export function useGameWorld(driving: DrivingState) {
           const rad = (n.heading * Math.PI) / 180;
           const dist = (n.speed / 3.6) * 0.5; // same scale as player
           let newX = n.x + Math.sin(rad) * dist;
-          let newY = n.y - Math.cos(rad) * dist;
+          let newY = n.y + Math.cos(rad) * dist;
 
           // Simple wander: randomly adjust heading slightly
           let newHeading = (n.heading + (Math.random() - 0.5) * 20) % 360;

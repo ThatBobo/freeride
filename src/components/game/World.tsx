@@ -779,7 +779,7 @@ function Minimap({
             <span
               key={z.id}
               className="absolute text-[11px]"
-              style={{ left: `calc(50% + ${dx}px)`, top: `calc(50% + ${dy}px)`, transform: "translate(-50%,-50%)" }}
+              style={{ left: `calc(50% + ${dx}px)`, top: `calc(50% - ${dy}px)`, transform: "translate(-50%,-50%)" }}
             >
               {z.emoji}
             </span>
@@ -795,7 +795,7 @@ function Minimap({
               className="absolute h-1.5 w-1.5 rounded-full"
               style={{
                 left: `calc(50% + ${dx}px)`,
-                top: `calc(50% + ${dy}px)`,
+                top: `calc(50% - ${dy}px)`,
                 transform: "translate(-50%,-50%)",
                 background: n.color,
               }}

@@ -129,7 +129,7 @@ export function useDriving() {
         const rad = (heading * Math.PI) / 180;
         const position = {
           x: prev.position.x + Math.sin(rad) * dist,
-          y: prev.position.y - Math.cos(rad) * dist, // negative because screen y goes down
+          y: prev.position.y + Math.cos(rad) * dist, // positive Y = forward (toward camera in 3D chase-cam)
         };
 
         return { speed, steering, heading, position, gas, brake, handbrake };
