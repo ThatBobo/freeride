@@ -15,7 +15,7 @@ type WorldProps = {
 const S = 6; // px per world unit on the ground plane
 const CELL = 260; // world units between roads
 const ROAD_W = 46; // world units road width
-const PLANE = 16000; // ground plane size in px
+const PLANE = 10000; // ground plane size in px
 const TILT = 74; // camera pitch
 
 /* ---------------- palettes ---------------- */
@@ -79,8 +79,8 @@ function buildingsAround(cx: number, cy: number, tod: TimeOfDay): Building[] {
   const out: Building[] = [];
   const ci = Math.round(cx / CELL);
   const cj = Math.round(cy / CELL);
-  for (let i = ci - 2; i <= ci + 2; i++) {
-    for (let j = cj - 2; j <= cj + 2; j++) {
+  for (let i = ci - 1; i <= ci + 1; i++) {
+    for (let j = cj - 1; j <= cj + 1; j++) {
       const bx = i * CELL;
       const by = j * CELL;
       const count = 3 + Math.floor(rand(i, j) * 3);
@@ -139,8 +139,8 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
     const cj = Math.round(py / CELL);
     const v: number[] = [];
     const h: number[] = [];
-    for (let i = ci - 3; i <= ci + 3; i++) v.push(i);
-    for (let j = cj - 3; j <= cj + 3; j++) h.push(j);
+    for (let i = ci - 2; i <= ci + 2; i++) v.push(i);
+    for (let j = cj - 2; j <= cj + 2; j++) h.push(j);
     return { v, h };
   }, [Math.round(px / CELL), Math.round(py / CELL)]);
 
@@ -154,7 +154,7 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
 
       {isNight && (
         <div className="pointer-events-none absolute inset-0">
-          {Array.from({ length: 60 }).map((_, i) => (
+          {Array.from({ length: 30 }).map((_, i) => (
             <span
               key={i}
               className="absolute rounded-full"
@@ -192,7 +192,7 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
       {/* distant skyline silhouette sitting on the horizon */}
       <div className="pointer-events-none absolute inset-x-0" style={{ top: "34%", height: "18%" }}>
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-center gap-[3px] opacity-60">
-          {Array.from({ length: 46 }).map((_, i) => {
+          {Array.from({ length: 28 }).map((_, i) => {
             const h = 12 + rand(i, 3) * 78;
             return (
               <span
@@ -226,6 +226,7 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
             width: 0,
             height: 0,
             transformStyle: "preserve-3d",
+            willChange: "transform",
             transform: `rotateX(${TILT}deg) rotateZ(${-heading}deg) translate(${-px * S}px, ${-py * S}px)`,
           }}
         >
@@ -365,33 +366,23 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
                   boxShadow: "0 0 0 1px oklch(0.1 0.02 260 / 0.35)",
                 }}
               >
-                <div className="grid h-full w-full grid-cols-3 content-start gap-[4px] p-[5px]">
-                  {Array.from({ length: Math.max(3, Math.floor(b.h / 8)) * 3 }).map((_, w) => {
-                    const on = isNight && rand(i + w, b.lit * 100) > 0.42;
-                    return (
-                      <span
-                        key={w}
-                        style={{
-                          height: 7,
-                          borderRadius: 1,
-                          background: on
-                            ? "oklch(0.9 0.13 78 / 0.92)"
-                            : isNight
-                              ? "oklch(0.12 0.02 262 / 0.85)"
-                              : "oklch(0.62 0.05 235 / 0.65)",
-                          boxShadow: on ? "0 0 8px oklch(0.9 0.13 78 / 0.6)" : undefined,
-                        }}
-                      />
-                    );
-                  })}
-                </div>
+                <div
+                  className="h-full w-full"
+                  style={{
+                    backgroundImage: isNight
+                      ? `repeating-linear-gradient(0deg, transparent 0 5px, ${b.lit > 0.42 ? "oklch(0.9 0.13 78 / 0.85)" : "oklch(0.12 0.02 262 / 0.8)"} 5px 12px, transparent 12px 17px), repeating-linear-gradient(90deg, transparent 0 5px, ${b.lit > 0.42 ? "oklch(0.9 0.13 78 / 0.85)" : "oklch(0.12 0.02 262 / 0.8)"} 5px 12px, transparent 12px 17px)`
+                      : `repeating-linear-gradient(0deg, transparent 0 5px, oklch(0.62 0.05 235 / 0.6) 5px 12px, transparent 12px 17px), repeating-linear-gradient(90deg, transparent 0 5px, oklch(0.62 0.05 235 / 0.6) 5px 12px, transparent 12px 17px)`,
+                    backgroundSize: "17px 17px",
+                    padding: "5px",
+                  }}
+                />
               </div>
             </div>
           ))}
 
           {/* NPC traffic */}
           {npcs.map((n) => {
-            if (Math.hypot(n.x - px, n.y - py) > 520) return null;
+            if (Math.hypot(n.x - px, n.y - py) > 380) return null;
             return (
               <div key={n.id} style={{ transformStyle: "preserve-3d" }}>
                 <div

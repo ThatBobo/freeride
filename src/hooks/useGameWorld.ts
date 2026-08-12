@@ -108,11 +108,11 @@ export function useGameWorld(driving: DrivingState) {
         npcs = npcs.filter((n) => {
           const dx = n.x - player.x;
           const dy = n.y - player.y;
-          return Math.sqrt(dx * dx + dy * dy) < 400;
+          return Math.sqrt(dx * dx + dy * dy) < 350;
         });
 
         // Spawn new NPCs if we need more (max 8)
-        while (npcs.length < 8) {
+        while (npcs.length < 6) {
           npcs.push(spawnNPC(npcIdRef.current++, player.x, player.y));
         }
 
