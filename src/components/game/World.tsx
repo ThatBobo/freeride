@@ -465,14 +465,10 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
         </div>
       )}
 
-      {/* ---------- PLAYER CAR (screen space) ---------- */}
+      {/* ---------- PLAYER CAR (fixed screen space — never moves) ---------- */}
       <div
-        className="pointer-events-none absolute left-1/2 z-20"
-        style={{
-          bottom: "9%",
-          transform: `translateX(-50%) translateX(${steering * -14}px) rotate(${steering * -2.2}deg)`,
-          transition: "transform 90ms linear",
-        }}
+        className="pointer-events-none absolute bottom-[9%] left-1/2 z-20"
+        style={{ transform: "translateX(-50%)", willChange: "auto" }}
       >
         <div
           className="absolute left-1/2 top-full h-6 w-[210px] -translate-x-1/2 -translate-y-2 rounded-full"
@@ -480,6 +476,7 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
         />
         <PlayerCar night={isNight} braking={driving.brake || reversing} boost={driving.gas && speed > 3} />
       </div>
+
 
       {/* ---------- HUD ---------- */}
       {/* top bar */}
