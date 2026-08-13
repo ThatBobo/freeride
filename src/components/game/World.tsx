@@ -147,6 +147,14 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
   const fov = 520 - Math.min(120, Math.abs(speed) * 0.7); // speed pulls the camera in
   const [faceA, faceB] = FACADE[timeOfDay];
 
+  // ---- WORLD-SCROLLING EFFECT ----
+  // The car never moves on screen. Instead the world scrolls/rotates
+  // to create the illusion of driving. Steering adds a subtle world
+  // lean and horizontal shift so turns feel responsive without
+  // moving the car sprite.
+  const worldSwayX = steering * 14;       // px: world shifts sideways when steering
+  const worldSwayRot = steering * 2.5;    // deg: world leans into the turn
+
   return (
     <div className="relative h-full w-full overflow-hidden select-none" aria-label="Freeride city — driver view">
       {/* ---------- SKY ---------- */}
@@ -227,7 +235,7 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
             height: 0,
             transformStyle: "preserve-3d",
             willChange: "transform",
-            transform: `rotateX(${TILT}deg) rotateZ(${-heading}deg) translate(${-px * S}px, ${-py * S}px)`,
+            transform: `rotateX(${TILT}deg) rotateZ(${-heading - worldSwayRot}deg) translate(${-px * S + worldSwayX}px, ${-py * S}px)`,
           }}
         >
           {/* ground */}
