@@ -14,8 +14,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
  * and world position (x, y) in arbitrary world units.
  *
  * Road barrier: the world has a grid of roads (CELL spacing, ROAD_W width).
- * The car can drift onto the shoulder but heavy drag stops it from
- * flying off into the grass.
+ * Off-road the car hits exponential grass drag + a gentle push-back toward
+ * the nearest road. No hard snap — the world keeps scrolling smoothly.
  */
 
 export type DrivingState = {
@@ -32,7 +32,7 @@ export type DrivingState = {
 // Road grid constants — MUST match World.tsx
 const CELL = 260;        // world units between roads
 const ROAD_W = 46;       // world units road width
-const SHOULDER = 12;     // how far past road edge the car can crawl (curb zone)
+const SHOULDER = 12;     // how far past road edge before push-back kicks in
 
 const MAX_SPEED = 180;       // km/h top speed
 const REVERSE_MAX = -25;     // km/h max reverse
@@ -45,23 +45,21 @@ const TURN_FACTOR = 0.55;    // how much steering affects heading at speed
 const HANDBRAKE_RATE = 120;  // km/h per second handbrake
 
 /**
- * Distance from the nearest road centerline.
+ * Distance from the nearest road centerline and which axis is closest.
  * Roads form a grid at every CELL interval in both X and Y.
- * Returns 0 when perfectly on a road centerline.
  */
-function distToNearestRoad(x: number, y: number): number {
-  // Nearest vertical road centerline: x = n * CELL
+function roadProximity(x: number, y: number): { dist: number; axis: "x" | "y" } {
   const dx = Math.abs(x - Math.round(x / CELL) * CELL);
-  // Nearest horizontal road centerline: y = n * CELL
   const dy = Math.abs(y - Math.round(y / CELL) * CELL);
-  return Math.min(dx, dy);
+  if (dx <= dy) return { dist: dx, axis: "x" };
+  return { dist: dy, axis: "y" };
 }
 
 export function useDriving() {
   const [state, setState] = useState<DrivingState>({
     speed: 0,
     steering: 0,
-    heading: 0,  // North = forward
+    heading: 0,
     position: { x: 0, y: 0 },
     gas: false,
     brake: false,
@@ -98,7 +96,7 @@ export function useDriving() {
     let last = performance.now();
 
     const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000); // cap at 50ms
+      const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
       setState((prev) => {
@@ -117,10 +115,9 @@ export function useDriving() {
           if (speed > 0) {
             speed -= BRAKE_RATE * dt;
           } else {
-            speed -= ACCEL_RATE * 0.6 * dt; // reverse acceleration
+            speed -= ACCEL_RATE * 0.6 * dt;
           }
         } else {
-          // coast / drag
           if (speed > 0) speed = Math.max(0, speed - COAST_DRAG * dt);
           else if (speed < 0) speed = Math.min(0, speed + COAST_DRAG * dt);
         }
@@ -132,58 +129,60 @@ export function useDriving() {
 
         speed = Math.max(REVERSE_MAX, Math.min(MAX_SPEED, speed));
 
-        // Steering physics — ramp towards target
+        // Steering physics
         let steering = prev.steering;
         if (left && !right) steering = Math.max(-1, steering - STEER_RATE * dt);
         else if (right && !left) steering = Math.min(1, steering + STEER_RATE * dt);
         else {
-          // return to center
           if (steering > 0) steering = Math.max(0, steering - STEER_RETURN * dt);
           else if (steering < 0) steering = Math.min(0, steering + STEER_RETURN * dt);
         }
 
-        // Heading changes based on steering and speed (more speed = more turn)
+        // Heading changes based on steering and speed
         const speedFactor = Math.min(1.2, Math.max(0.15, Math.abs(speed) / 25));
         const heading =
           ((prev.heading + steering * TURN_FACTOR * speedFactor * dt * 60 * Math.sign(speed || 1)) % 360 + 360) % 360;
 
-        // Position update: convert speed to world units
-        // 1 km/h ≈ 0.5 world units / second for a nice visual feel
-        const dist = (speed / 3.6) * dt * 0.5; // m/s * dt * scale
+        // Position update
+        const dist = (speed / 3.6) * dt * 0.5;
         const rad = (heading * Math.PI) / 180;
         let position = {
           x: prev.position.x + Math.sin(rad) * dist,
-          y: prev.position.y + Math.cos(rad) * dist, // positive Y = forward (toward camera in 3D chase-cam)
+          y: prev.position.y + Math.cos(rad) * dist,
         };
 
-        // ---- ROAD BARRIER SYSTEM ----
-        // Check if the car is on a road. Roads form a grid at CELL intervals.
-        const roadDist = distToNearestRoad(position.x, position.y);
+        // ---- ROAD BARRIER SYSTEM (smooth) ----
+        const prox = roadProximity(position.x, position.y);
         const halfRoad = ROAD_W / 2;
         let offRoad = false;
 
-        if (roadDist > halfRoad) {
+        if (prox.dist > halfRoad) {
           offRoad = true;
-          const overshoot = roadDist - halfRoad;
+          const overshoot = prox.dist - halfRoad;
 
-          if (overshoot <= SHOULDER) {
-            // On the shoulder/curb: moderate grass drag
-            const grassDrag = 35 + overshoot * 6;
-            if (speed > 0) speed = Math.max(0, speed - grassDrag * dt);
-            else if (speed < 0) speed = Math.min(0, speed + grassDrag * dt);
-          } else {
-            // Hard barrier: past the shoulder — extreme drag, car crawls to a stop
-            // Allow reversing so the player can back out
-            const barrierDrag = 200;
-            if (speed > 0) speed = Math.max(0, speed - barrierDrag * dt);
-            else if (speed < 0) speed = Math.min(0, speed + barrierDrag * dt);
+          // Exponential grass drag — smooth curve from mild to extreme
+          // shoulder edge (0):  ~30 km/h/s  — gentle slowdown
+          // +12 (shoulder):     ~47 km/h/s  — noticeable
+          // +25:                ~94 km/h/s  — heavy
+          // +40:               ~150 km/h/s  — near stop
+          const grassDrag = 30 + overshoot * overshoot * 0.08;
+          if (speed > 0) speed = Math.max(0, speed - grassDrag * dt);
+          else if (speed < 0) speed = Math.min(0, speed + grassDrag * dt);
 
-            // If the car is basically stopped, prevent further forward drift
-            // by clamping position to just inside the barrier
-            if (Math.abs(speed) < 1) {
-              speed = 0;
-              // Snap back to just inside the hard barrier edge
-              position = { ...prev.position };
+          // Gentle push-back toward nearest road — only past the shoulder
+          // This creates a "magnetic road" effect: the world smoothly
+          // scrolls back toward the road instead of hitting a hard wall.
+          if (overshoot > SHOULDER) {
+            const pushStrength = Math.min(6, (overshoot - SHOULDER) * 0.25) * dt;
+            const nearestRoad = Math.round(
+              (prox.axis === "x" ? position.x : position.y) / CELL
+            ) * CELL;
+            const delta = (prox.axis === "x" ? position.x : position.y) - nearestRoad;
+
+            if (prox.axis === "x") {
+              position.x -= Math.sign(delta) * pushStrength;
+            } else {
+              position.y -= Math.sign(delta) * pushStrength;
             }
           }
         }

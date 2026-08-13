@@ -115,7 +115,7 @@ function buildingsAround(cx: number, cy: number, tod: TimeOfDay): Building[] {
 /* ---------------- component ---------------- */
 
 export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
-  const { speed, steering, position, heading } = driving;
+  const { speed, steering, position, heading, offRoad } = driving;
   const {
     timeOfDay = "day",
     clockMinutes = 600,
@@ -154,6 +154,9 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
   // moving the car sprite.
   const worldSwayX = steering * 14;       // px: world shifts sideways when steering
   const worldSwayRot = steering * 2.5;    // deg: world leans into the turn
+
+  // Subtle world vibration when off-road — deterministic so it doesn't jitter on re-renders
+  const roadJitter = offRoad && Math.abs(speed) > 3 ? Math.sin(px * 0.8 + py * 0.3) * 1.8 : 0;
 
   return (
     <div className="relative h-full w-full overflow-hidden select-none" aria-label="Freeride city — driver view">
@@ -235,7 +238,7 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
             height: 0,
             transformStyle: "preserve-3d",
             willChange: "transform",
-            transform: `rotateX(${TILT}deg) rotateZ(${-heading - worldSwayRot}deg) translate(${-px * S + worldSwayX}px, ${-py * S}px)`,
+            transform: `rotateX(${TILT}deg) rotateZ(${-heading - worldSwayRot}deg) translate(${-px * S + worldSwayX + roadJitter}px, ${-py * S + roadJitter * 0.5}px)`,
           }}
         >
           {/* ground */}
