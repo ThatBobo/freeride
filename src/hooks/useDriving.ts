@@ -194,8 +194,15 @@ export function useDriving() {
           }
         }
 
-        return { speed, steering, heading, position, gas, brake, handbrake, offRoad };
-      });
+        live.current = { speed, steering, heading, position, gas, brake, handbrake, offRoad };
+      }
+
+      sinceCommit += dt;
+      if (sinceCommit >= 0.08) {
+        sinceCommit = 0;
+        setState(live.current);
+      }
+
 
       raf = requestAnimationFrame(tick);
     };
