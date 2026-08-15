@@ -224,5 +224,5 @@ export function useDriving() {
     if (key) keys.current[key] = active;
   }, []);
 
-  return { state, setTouch };
+  return { state, live, setTouch };
 }
