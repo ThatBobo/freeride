@@ -1,9 +1,11 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
+import type { MutableRefObject } from "react";
 import type { DrivingState } from "@/hooks/useDriving";
 import type { GameWorldState, Zone, TimeOfDay } from "@/hooks/useGameWorld";
 
 type WorldProps = {
   driving: DrivingState;
+  live: MutableRefObject<DrivingState>;
   passengers: string[];
   moving: boolean;
   gameWorld: GameWorldState;
