@@ -55,21 +55,25 @@ function roadProximity(x: number, y: number): { dist: number; axis: "x" | "y" } 
   return { dist: dy, axis: "y" };
 }
 
+const INITIAL: DrivingState = {
+  speed: 0,
+  steering: 0,
+  heading: 0,
+  position: { x: 0, y: 0 },
+  gas: false,
+  brake: false,
+  handbrake: false,
+  offRoad: false,
+};
+
 export function useDriving() {
-  const [state, setState] = useState<DrivingState>({
-    speed: 0,
-    steering: 0,
-    heading: 0,
-    position: { x: 0, y: 0 },
-    gas: false,
-    brake: false,
-    handbrake: false,
-    offRoad: false,
-  });
+  // React state is committed at a low rate (~12 Hz) purely for HUD / world
+  // chunk updates. The authoritative physics lives in `live` and runs at
+  // full frame rate, so heavy React trees never re-render 60x per second.
+  const [state, setState] = useState<DrivingState>(INITIAL);
+  const live = useRef<DrivingState>(INITIAL);
 
   const keys = useRef<Record<string, boolean>>({});
-  const ref = useRef<DrivingState>(state);
-  ref.current = state;
 
   // Keyboard input
   useEffect(() => {
@@ -94,12 +98,15 @@ export function useDriving() {
   useEffect(() => {
     let raf: number;
     let last = performance.now();
+    let sinceCommit = 0;
 
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
-      setState((prev) => {
+      {
+        const prev = live.current;
+
         const k = keys.current;
         const gas = !!(k["arrowup"] || k["w"]);
         const brake = !!(k["arrowdown"] || k["s"]);
