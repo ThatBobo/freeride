@@ -246,13 +246,15 @@ export function World({ driving, live, passengers, gameWorld, zones }: WorldProp
 
       {/* ---------- 3D SCENE ---------- */}
       <div
+        ref={camRef}
         className="absolute inset-0"
         style={{
-          perspective: `${fov}px`,
+          perspective: "520px",
           perspectiveOrigin: "50% 34%",
         }}
       >
         <div
+          ref={sceneRef}
           className="absolute"
           style={{
             left: "50%",
@@ -261,15 +263,15 @@ export function World({ driving, live, passengers, gameWorld, zones }: WorldProp
             height: 0,
             transformStyle: "preserve-3d",
             willChange: "transform",
-            transform: `rotateX(${TILT}deg) rotateZ(${-heading - worldSwayRot}deg) translate(${-px * S + worldSwayX + roadJitter}px, ${-py * S + roadJitter * 0.5}px)`,
+            transform: `rotateX(${TILT}deg) rotateZ(${-heading}deg) translate(${-px * S}px, ${-py * S}px)`,
           }}
         >
           {/* ground */}
           <div
             className="absolute"
             style={{
-              left: -PLANE / 2 + px * S,
-              top: -PLANE / 2 + py * S,
+              left: -PLANE / 2 + groundOx,
+              top: -PLANE / 2 + groundOy,
               width: PLANE,
               height: PLANE,
               background: GRASS[timeOfDay],
@@ -285,7 +287,7 @@ export function World({ driving, live, passengers, gameWorld, zones }: WorldProp
               className="absolute"
               style={{
                 left: i * CELL * S - (ROAD_W * S) / 2,
-                top: -PLANE / 2 + py * S,
+                top: -PLANE / 2 + laneOy,
                 width: ROAD_W * S,
                 height: PLANE,
                 background: ASPHALT[timeOfDay],
@@ -305,10 +307,11 @@ export function World({ driving, live, passengers, gameWorld, zones }: WorldProp
               key={`h${j}`}
               className="absolute"
               style={{
-                left: -PLANE / 2 + px * S,
+                left: -PLANE / 2 + laneOx,
                 top: j * CELL * S - (ROAD_W * S) / 2,
                 width: PLANE,
                 height: ROAD_W * S,
+
                 background: ASPHALT[timeOfDay],
                 boxShadow: "inset 0 0 0 3px oklch(0.9 0.02 250 / 0.25)",
               }}
