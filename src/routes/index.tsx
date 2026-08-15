@@ -71,6 +71,8 @@ function Index() {
       >
         <World
           driving={driving}
+          live={live}
+
           passengers={passengers}
           moving={moving}
           gameWorld={gameWorld}
