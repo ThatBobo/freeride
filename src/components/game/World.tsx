@@ -114,8 +114,8 @@ function buildingsAround(cx: number, cy: number, tod: TimeOfDay): Building[] {
 
 /* ---------------- component ---------------- */
 
-export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
-  const { speed, steering, position, heading, offRoad } = driving;
+export function World({ driving, live, passengers, gameWorld, zones }: WorldProps) {
+  const { speed, position, heading } = driving;
   const {
     timeOfDay = "day",
     clockMinutes = 600,
@@ -128,35 +128,56 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
   const px = position.x;
   const py = position.y;
 
-  const buildings = useMemo(
-    () => buildingsAround(Math.round(px / 40) * 40, Math.round(py / 40) * 40, timeOfDay),
-    [Math.round(px / 40), Math.round(py / 40), timeOfDay],
-  );
+  const bx = Math.round(px / 40) * 40;
+  const by = Math.round(py / 40) * 40;
+  const buildings = useMemo(() => buildingsAround(bx, by, timeOfDay), [bx, by, timeOfDay]);
 
   // Visible road indices around the player
+  const ci = Math.round(px / CELL);
+  const cj = Math.round(py / CELL);
   const roadIdx = useMemo(() => {
-    const ci = Math.round(px / CELL);
-    const cj = Math.round(py / CELL);
     const v: number[] = [];
     const h: number[] = [];
     for (let i = ci - 2; i <= ci + 2; i++) v.push(i);
     for (let j = cj - 2; j <= cj + 2; j++) h.push(j);
     return { v, h };
-  }, [Math.round(px / CELL), Math.round(py / CELL)]);
+  }, [ci, cj]);
 
-  const fov = 520 - Math.min(120, Math.abs(speed) * 0.7); // speed pulls the camera in
   const [faceA, faceB] = FACADE[timeOfDay];
 
-  // ---- WORLD-SCROLLING EFFECT ----
-  // The car never moves on screen. Instead the world scrolls/rotates
-  // to create the illusion of driving. Steering adds a subtle world
-  // lean and horizontal shift so turns feel responsive without
-  // moving the car sprite.
-  const worldSwayX = steering * 14;       // px: world shifts sideways when steering
-  const worldSwayRot = steering * 2.5;    // deg: world leans into the turn
+  // Ground / road plane origins are quantized so React only re-renders them
+  // rarely — the smooth motion comes from the imperative scene transform.
+  const groundOx = Math.round((px * S) / 48) * 48;
+  const groundOy = Math.round((py * S) / 48) * 48;
+  const laneOx = Math.round((px * S) / 80) * 80;
+  const laneOy = Math.round((py * S) / 80) * 80;
 
-  // Subtle world vibration when off-road — deterministic so it doesn't jitter on re-renders
-  const roadJitter = offRoad && Math.abs(speed) > 3 ? Math.sin(px * 0.8 + py * 0.3) * 1.8 : 0;
+  // ---- WORLD-SCROLLING EFFECT (imperative, 60fps, zero re-renders) ----
+  const sceneRef = useRef<HTMLDivElement | null>(null);
+  const camRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    let raf = 0;
+    const loop = () => {
+      const d = live.current;
+      const scene = sceneRef.current;
+      if (scene) {
+        const swayX = d.steering * 14;
+        const swayRot = d.steering * 2.5;
+        const jitter =
+          d.offRoad && Math.abs(d.speed) > 3
+            ? Math.sin(performance.now() * 0.03) * 1.8
+            : 0;
+        scene.style.transform = `rotateX(${TILT}deg) rotateZ(${-d.heading - swayRot}deg) translate(${-d.position.x * S + swayX + jitter}px, ${-d.position.y * S + jitter * 0.5}px)`;
+      }
+      if (camRef.current) {
+        camRef.current.style.perspective = `${520 - Math.min(120, Math.abs(d.speed) * 0.7)}px`;
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [live]);
+
 
   return (
     <div className="relative h-full w-full overflow-hidden select-none" aria-label="Freeride city — driver view">
