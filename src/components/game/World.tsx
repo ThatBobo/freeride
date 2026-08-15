@@ -519,53 +519,61 @@ export function World({ driving, live, passengers, gameWorld, zones }: WorldProp
 
       {/* ---------- HUD ---------- */}
       {/* top bar */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between p-4">
-        <div className="hud-panel flex items-center gap-3 rounded-2xl px-4 py-2.5">
-          <div className="flex flex-col">
-            <span className="hud-label">Location</span>
-            <span className="font-display text-sm font-semibold leading-tight">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-3 sm:p-4">
+        <div className="hud-panel flex items-center gap-3 rounded-full py-2 pl-3 pr-4">
+          <span
+            className="grid h-8 w-8 place-items-center rounded-full text-base"
+            style={{ background: "oklch(1 0 0 / 0.1)" }}
+          >
+            {currentZone ? currentZone.emoji : "🛣️"}
+          </span>
+          <div className="flex flex-col gap-1">
+            <span className="hud-label">{currentZone ? "Zone" : "Cruising"}</span>
+            <span className="font-display text-[13px] font-semibold leading-none">
               {currentZone ? currentZone.name : "Open Roads"}
             </span>
           </div>
-          <span className="h-8 w-px bg-[oklch(1_0_0_/_0.15)]" />
-          <div className="flex flex-col">
+          <span className="h-7 w-px bg-[oklch(1_0_0_/_0.12)]" />
+          <div className="flex flex-col items-end gap-1">
             <span className="hud-label">{timeLabel(timeOfDay)}</span>
-            <span className="font-display text-sm font-semibold leading-tight tabular-nums">
+            <span className="font-display text-[13px] font-semibold leading-none tabular-nums">
               {formatClock(clockMinutes)}
             </span>
           </div>
         </div>
 
-        <div className="hud-panel flex items-center gap-2 rounded-2xl px-4 py-2.5">
+        <div className="hud-panel flex items-center gap-2.5 rounded-full px-4 py-2.5">
           <span className="hud-label">Crew</span>
-          <span className="font-display text-sm font-semibold tabular-nums">
-            {passengers.length + 1}
-            <span className="text-[oklch(0.75_0.02_250)]">/4</span>
-          </span>
-          <div className="flex gap-1">
+          <div className="flex -space-x-1.5">
             {Array.from({ length: 4 }).map((_, i) => (
               <span
                 key={i}
-                className="h-1.5 w-4 rounded-full"
+                className="h-5 w-5 rounded-full border"
                 style={{
+                  borderColor: "oklch(0.16 0.03 260 / 0.9)",
                   background:
-                    i <= passengers.length ? "var(--gradient-primary)" : "oklch(1 0 0 / 0.18)",
+                    i <= passengers.length ? "var(--gradient-primary)" : "oklch(1 0 0 / 0.14)",
                 }}
               />
             ))}
           </div>
+          <span className="font-display text-[13px] font-semibold tabular-nums">
+            {passengers.length + 1}
+            <span className="text-[oklch(0.72_0.02_250)]">/4</span>
+          </span>
         </div>
       </div>
 
       {/* minimap */}
-      <div className="pointer-events-none absolute bottom-5 left-5 z-30">
+      <div className="pointer-events-none absolute bottom-4 left-4 z-30">
         <Minimap px={px} py={py} heading={heading} zones={zones} npcs={npcs} />
       </div>
 
       {/* speedometer */}
-      <div className="pointer-events-none absolute bottom-5 right-5 z-30">
-        <Speedometer speed={speed} gas={driving.gas} brake={driving.brake} reversing={reversing} />
+      <div className="pointer-events-none absolute bottom-4 right-4 z-30">
+        <Speedometer live={live} />
       </div>
+
 
       <style>{`
         @keyframes streak { from { top: 100%; } to { top: -25%; } }
