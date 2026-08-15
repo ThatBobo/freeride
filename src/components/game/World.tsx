@@ -384,8 +384,9 @@ export function World({ driving, live, passengers, gameWorld, zones }: WorldProp
                   width: b.w * S,
                   height: b.d * S,
                   transform: "translate(-50%,-50%)",
-                  background: "oklch(0.1 0.02 260 / 0.35)",
-                  filter: "blur(4px)",
+                  background:
+                    "radial-gradient(ellipse at 50% 50%, oklch(0.1 0.02 260 / 0.38), transparent 72%)",
+
                 }}
               />
               {/* facade */}
