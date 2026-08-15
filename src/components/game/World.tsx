@@ -704,43 +704,74 @@ const PlayerCar = memo(function PlayerCar({ night, braking, boost }: { night: bo
 
 /* ---------------- HUD widgets ---------------- */
 
-function Speedometer({
-  speed,
-  gas,
-  brake,
-  reversing,
+/**
+ * Speedometer reads the live physics ref at frame rate and writes straight to
+ * the DOM — it never re-renders, so the needle stays smooth for free.
+ */
+const Speedometer = memo(function Speedometer({
+  live,
 }: {
-  speed: number;
-  gas: boolean;
-  brake: boolean;
-  reversing: boolean;
+  live: MutableRefObject<DrivingState>;
 }) {
-  const v = Math.min(180, Math.abs(speed));
-  const pct = v / 180;
-  const R = 54;
-  const C = Math.PI * R; // half circle length
-  const gear = reversing ? "R" : Math.abs(speed) < 1 ? "N" : "D";
+  const R = 52;
+  const C = Math.PI * R;
+  const arcRef = useRef<SVGPathElement | null>(null);
+  const numRef = useRef<HTMLSpanElement | null>(null);
+  const gearRef = useRef<HTMLSpanElement | null>(null);
+  const gasRef = useRef<HTMLSpanElement | null>(null);
+  const brakeRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    let raf = 0;
+    let lastNum = -1;
+    let lastGear = "";
+    const loop = () => {
+      const d = live.current;
+      const v = Math.min(180, Math.abs(d.speed));
+      if (arcRef.current) arcRef.current.style.strokeDashoffset = String(C * (1 - v / 180));
+      const n = Math.round(v);
+      if (n !== lastNum && numRef.current) {
+        lastNum = n;
+        numRef.current.textContent = String(n);
+      }
+      const gear = d.speed < -0.5 ? "R" : Math.abs(d.speed) < 1 ? "N" : "D";
+      if (gear !== lastGear && gearRef.current) {
+        lastGear = gear;
+        gearRef.current.textContent = gear;
+        gearRef.current.style.background =
+          gear === "D" ? "var(--gradient-primary)" : "oklch(1 0 0 / 0.12)";
+        gearRef.current.style.color = gear === "D" ? "oklch(0.15 0.03 255)" : "inherit";
+      }
+      if (gasRef.current)
+        gasRef.current.style.background = d.gas ? "oklch(0.82 0.16 150)" : "oklch(1 0 0 / 0.15)";
+      if (brakeRef.current)
+        brakeRef.current.style.background = d.brake ? "oklch(0.68 0.24 28)" : "oklch(1 0 0 / 0.15)";
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [live, C]);
 
   return (
-    <div className="hud-panel flex items-end gap-4 rounded-3xl px-5 py-4">
-      <div className="relative" style={{ width: 132, height: 82 }}>
-        <svg width="132" height="82" viewBox="0 0 132 82" className="overflow-visible">
+    <div className="hud-panel flex items-end gap-3 rounded-[26px] px-4 py-3">
+      <div className="relative" style={{ width: 124, height: 76 }}>
+        <svg width="124" height="76" viewBox="0 0 124 76" className="overflow-visible">
           <path
-            d={`M 12 70 A ${R} ${R} 0 0 1 120 70`}
+            d={`M 10 66 A ${R} ${R} 0 0 1 114 66`}
             fill="none"
-            stroke="oklch(1 0 0 / 0.14)"
-            strokeWidth="9"
+            stroke="oklch(1 0 0 / 0.12)"
+            strokeWidth="8"
             strokeLinecap="round"
           />
           <path
-            d={`M 12 70 A ${R} ${R} 0 0 1 120 70`}
+            ref={arcRef}
+            d={`M 10 66 A ${R} ${R} 0 0 1 114 66`}
             fill="none"
             stroke="url(#spd)"
-            strokeWidth="9"
+            strokeWidth="8"
             strokeLinecap="round"
             strokeDasharray={C}
-            strokeDashoffset={C * (1 - pct)}
-            style={{ transition: "stroke-dashoffset 110ms linear" }}
+            strokeDashoffset={C}
           />
           <defs>
             <linearGradient id="spd" x1="0" y1="0" x2="1" y2="0">
@@ -751,37 +782,38 @@ function Speedometer({
           </defs>
         </svg>
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
-          <span className="font-display text-[34px] font-bold leading-none tabular-nums">
-            {Math.round(v)}
+          <span ref={numRef} className="font-display text-[32px] font-bold leading-none tabular-nums">
+            0
           </span>
-          <span className="hud-label mt-0.5">km/h</span>
+          <span className="hud-label mt-1">km/h</span>
         </div>
       </div>
 
       <div className="flex flex-col items-center gap-2 pb-1">
         <span
-          className="grid h-9 w-9 place-items-center rounded-xl font-display text-base font-bold"
-          style={{
-            background: gear === "D" ? "var(--gradient-primary)" : "oklch(1 0 0 / 0.12)",
-            color: gear === "D" ? "oklch(0.15 0.03 255)" : "inherit",
-          }}
+          ref={gearRef}
+          className="grid h-9 w-9 place-items-center rounded-2xl font-display text-base font-bold"
+          style={{ background: "oklch(1 0 0 / 0.12)" }}
         >
-          {gear}
+          N
         </span>
         <div className="flex gap-1">
           <span
-            className="h-1.5 w-5 rounded-full transition-colors"
-            style={{ background: gas ? "oklch(0.82 0.16 150)" : "oklch(1 0 0 / 0.15)" }}
+            ref={gasRef}
+            className="h-1.5 w-5 rounded-full"
+            style={{ background: "oklch(1 0 0 / 0.15)" }}
           />
           <span
-            className="h-1.5 w-5 rounded-full transition-colors"
-            style={{ background: brake ? "oklch(0.68 0.24 28)" : "oklch(1 0 0 / 0.15)" }}
+            ref={brakeRef}
+            className="h-1.5 w-5 rounded-full"
+            style={{ background: "oklch(1 0 0 / 0.15)" }}
           />
         </div>
       </div>
     </div>
   );
-}
+});
+
 
 function Minimap({
   px,
