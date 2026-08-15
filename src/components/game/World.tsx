@@ -1,9 +1,11 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
+import type { MutableRefObject } from "react";
 import type { DrivingState } from "@/hooks/useDriving";
 import type { GameWorldState, Zone, TimeOfDay } from "@/hooks/useGameWorld";
 
 type WorldProps = {
   driving: DrivingState;
+  live: MutableRefObject<DrivingState>;
   passengers: string[];
   moving: boolean;
   gameWorld: GameWorldState;
@@ -114,8 +116,8 @@ function buildingsAround(cx: number, cy: number, tod: TimeOfDay): Building[] {
 
 /* ---------------- component ---------------- */
 
-export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
-  const { speed, steering, position, heading, offRoad } = driving;
+export function World({ driving, live, passengers, gameWorld, zones }: WorldProps) {
+  const { speed, position, heading } = driving;
   const {
     timeOfDay = "day",
     clockMinutes = 600,
@@ -128,35 +130,56 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
   const px = position.x;
   const py = position.y;
 
-  const buildings = useMemo(
-    () => buildingsAround(Math.round(px / 40) * 40, Math.round(py / 40) * 40, timeOfDay),
-    [Math.round(px / 40), Math.round(py / 40), timeOfDay],
-  );
+  const bx = Math.round(px / 40) * 40;
+  const by = Math.round(py / 40) * 40;
+  const buildings = useMemo(() => buildingsAround(bx, by, timeOfDay), [bx, by, timeOfDay]);
 
   // Visible road indices around the player
+  const ci = Math.round(px / CELL);
+  const cj = Math.round(py / CELL);
   const roadIdx = useMemo(() => {
-    const ci = Math.round(px / CELL);
-    const cj = Math.round(py / CELL);
     const v: number[] = [];
     const h: number[] = [];
     for (let i = ci - 2; i <= ci + 2; i++) v.push(i);
     for (let j = cj - 2; j <= cj + 2; j++) h.push(j);
     return { v, h };
-  }, [Math.round(px / CELL), Math.round(py / CELL)]);
+  }, [ci, cj]);
 
-  const fov = 520 - Math.min(120, Math.abs(speed) * 0.7); // speed pulls the camera in
   const [faceA, faceB] = FACADE[timeOfDay];
 
-  // ---- WORLD-SCROLLING EFFECT ----
-  // The car never moves on screen. Instead the world scrolls/rotates
-  // to create the illusion of driving. Steering adds a subtle world
-  // lean and horizontal shift so turns feel responsive without
-  // moving the car sprite.
-  const worldSwayX = steering * 14;       // px: world shifts sideways when steering
-  const worldSwayRot = steering * 2.5;    // deg: world leans into the turn
+  // Ground / road plane origins are quantized so React only re-renders them
+  // rarely — the smooth motion comes from the imperative scene transform.
+  const groundOx = Math.round((px * S) / 48) * 48;
+  const groundOy = Math.round((py * S) / 48) * 48;
+  const laneOx = Math.round((px * S) / 80) * 80;
+  const laneOy = Math.round((py * S) / 80) * 80;
 
-  // Subtle world vibration when off-road — deterministic so it doesn't jitter on re-renders
-  const roadJitter = offRoad && Math.abs(speed) > 3 ? Math.sin(px * 0.8 + py * 0.3) * 1.8 : 0;
+  // ---- WORLD-SCROLLING EFFECT (imperative, 60fps, zero re-renders) ----
+  const sceneRef = useRef<HTMLDivElement | null>(null);
+  const camRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    let raf = 0;
+    const loop = () => {
+      const d = live.current;
+      const scene = sceneRef.current;
+      if (scene) {
+        const swayX = d.steering * 14;
+        const swayRot = d.steering * 2.5;
+        const jitter =
+          d.offRoad && Math.abs(d.speed) > 3
+            ? Math.sin(performance.now() * 0.03) * 1.8
+            : 0;
+        scene.style.transform = `rotateX(${TILT}deg) rotateZ(${-d.heading - swayRot}deg) translate(${-d.position.x * S + swayX + jitter}px, ${-d.position.y * S + jitter * 0.5}px)`;
+      }
+      if (camRef.current) {
+        camRef.current.style.perspective = `${520 - Math.min(120, Math.abs(d.speed) * 0.7)}px`;
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [live]);
+
 
   return (
     <div className="relative h-full w-full overflow-hidden select-none" aria-label="Freeride city — driver view">
@@ -223,13 +246,15 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
 
       {/* ---------- 3D SCENE ---------- */}
       <div
+        ref={camRef}
         className="absolute inset-0"
         style={{
-          perspective: `${fov}px`,
+          perspective: "520px",
           perspectiveOrigin: "50% 34%",
         }}
       >
         <div
+          ref={sceneRef}
           className="absolute"
           style={{
             left: "50%",
@@ -238,15 +263,15 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
             height: 0,
             transformStyle: "preserve-3d",
             willChange: "transform",
-            transform: `rotateX(${TILT}deg) rotateZ(${-heading - worldSwayRot}deg) translate(${-px * S + worldSwayX + roadJitter}px, ${-py * S + roadJitter * 0.5}px)`,
+            transform: `rotateX(${TILT}deg) rotateZ(${-heading}deg) translate(${-px * S}px, ${-py * S}px)`,
           }}
         >
           {/* ground */}
           <div
             className="absolute"
             style={{
-              left: -PLANE / 2 + px * S,
-              top: -PLANE / 2 + py * S,
+              left: -PLANE / 2 + groundOx,
+              top: -PLANE / 2 + groundOy,
               width: PLANE,
               height: PLANE,
               background: GRASS[timeOfDay],
@@ -262,7 +287,7 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
               className="absolute"
               style={{
                 left: i * CELL * S - (ROAD_W * S) / 2,
-                top: -PLANE / 2 + py * S,
+                top: -PLANE / 2 + laneOy,
                 width: ROAD_W * S,
                 height: PLANE,
                 background: ASPHALT[timeOfDay],
@@ -282,10 +307,11 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
               key={`h${j}`}
               className="absolute"
               style={{
-                left: -PLANE / 2 + px * S,
+                left: -PLANE / 2 + laneOx,
                 top: j * CELL * S - (ROAD_W * S) / 2,
                 width: PLANE,
                 height: ROAD_W * S,
+
                 background: ASPHALT[timeOfDay],
                 boxShadow: "inset 0 0 0 3px oklch(0.9 0.02 250 / 0.25)",
               }}
@@ -358,8 +384,9 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
                   width: b.w * S,
                   height: b.d * S,
                   transform: "translate(-50%,-50%)",
-                  background: "oklch(0.1 0.02 260 / 0.35)",
-                  filter: "blur(4px)",
+                  background:
+                    "radial-gradient(ellipse at 50% 50%, oklch(0.1 0.02 260 / 0.38), transparent 72%)",
+
                 }}
               />
               {/* facade */}
@@ -404,8 +431,9 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
                     width: 60,
                     height: 30,
                     transform: "translate(-50%,-50%)",
-                    background: "oklch(0.1 0.02 260 / 0.4)",
-                    filter: "blur(5px)",
+                    background:
+                      "radial-gradient(ellipse at 50% 50%, oklch(0.1 0.02 260 / 0.45), transparent 70%)",
+
                   }}
                 />
                 <div
@@ -491,53 +519,61 @@ export function World({ driving, passengers, gameWorld, zones }: WorldProps) {
 
       {/* ---------- HUD ---------- */}
       {/* top bar */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between p-4">
-        <div className="hud-panel flex items-center gap-3 rounded-2xl px-4 py-2.5">
-          <div className="flex flex-col">
-            <span className="hud-label">Location</span>
-            <span className="font-display text-sm font-semibold leading-tight">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-3 sm:p-4">
+        <div className="hud-panel flex items-center gap-3 rounded-full py-2 pl-3 pr-4">
+          <span
+            className="grid h-8 w-8 place-items-center rounded-full text-base"
+            style={{ background: "oklch(1 0 0 / 0.1)" }}
+          >
+            {currentZone ? currentZone.emoji : "🛣️"}
+          </span>
+          <div className="flex flex-col gap-1">
+            <span className="hud-label">{currentZone ? "Zone" : "Cruising"}</span>
+            <span className="font-display text-[13px] font-semibold leading-none">
               {currentZone ? currentZone.name : "Open Roads"}
             </span>
           </div>
-          <span className="h-8 w-px bg-[oklch(1_0_0_/_0.15)]" />
-          <div className="flex flex-col">
+          <span className="h-7 w-px bg-[oklch(1_0_0_/_0.12)]" />
+          <div className="flex flex-col items-end gap-1">
             <span className="hud-label">{timeLabel(timeOfDay)}</span>
-            <span className="font-display text-sm font-semibold leading-tight tabular-nums">
+            <span className="font-display text-[13px] font-semibold leading-none tabular-nums">
               {formatClock(clockMinutes)}
             </span>
           </div>
         </div>
 
-        <div className="hud-panel flex items-center gap-2 rounded-2xl px-4 py-2.5">
+        <div className="hud-panel flex items-center gap-2.5 rounded-full px-4 py-2.5">
           <span className="hud-label">Crew</span>
-          <span className="font-display text-sm font-semibold tabular-nums">
-            {passengers.length + 1}
-            <span className="text-[oklch(0.75_0.02_250)]">/4</span>
-          </span>
-          <div className="flex gap-1">
+          <div className="flex -space-x-1.5">
             {Array.from({ length: 4 }).map((_, i) => (
               <span
                 key={i}
-                className="h-1.5 w-4 rounded-full"
+                className="h-5 w-5 rounded-full border"
                 style={{
+                  borderColor: "oklch(0.16 0.03 260 / 0.9)",
                   background:
-                    i <= passengers.length ? "var(--gradient-primary)" : "oklch(1 0 0 / 0.18)",
+                    i <= passengers.length ? "var(--gradient-primary)" : "oklch(1 0 0 / 0.14)",
                 }}
               />
             ))}
           </div>
+          <span className="font-display text-[13px] font-semibold tabular-nums">
+            {passengers.length + 1}
+            <span className="text-[oklch(0.72_0.02_250)]">/4</span>
+          </span>
         </div>
       </div>
 
       {/* minimap */}
-      <div className="pointer-events-none absolute bottom-5 left-5 z-30">
+      <div className="pointer-events-none absolute bottom-4 left-4 z-30">
         <Minimap px={px} py={py} heading={heading} zones={zones} npcs={npcs} />
       </div>
 
       {/* speedometer */}
-      <div className="pointer-events-none absolute bottom-5 right-5 z-30">
-        <Speedometer speed={speed} gas={driving.gas} brake={driving.brake} reversing={reversing} />
+      <div className="pointer-events-none absolute bottom-4 right-4 z-30">
+        <Speedometer live={live} />
       </div>
+
 
       <style>{`
         @keyframes streak { from { top: 100%; } to { top: -25%; } }
@@ -668,43 +704,74 @@ const PlayerCar = memo(function PlayerCar({ night, braking, boost }: { night: bo
 
 /* ---------------- HUD widgets ---------------- */
 
-function Speedometer({
-  speed,
-  gas,
-  brake,
-  reversing,
+/**
+ * Speedometer reads the live physics ref at frame rate and writes straight to
+ * the DOM — it never re-renders, so the needle stays smooth for free.
+ */
+const Speedometer = memo(function Speedometer({
+  live,
 }: {
-  speed: number;
-  gas: boolean;
-  brake: boolean;
-  reversing: boolean;
+  live: MutableRefObject<DrivingState>;
 }) {
-  const v = Math.min(180, Math.abs(speed));
-  const pct = v / 180;
-  const R = 54;
-  const C = Math.PI * R; // half circle length
-  const gear = reversing ? "R" : Math.abs(speed) < 1 ? "N" : "D";
+  const R = 52;
+  const C = Math.PI * R;
+  const arcRef = useRef<SVGPathElement | null>(null);
+  const numRef = useRef<HTMLSpanElement | null>(null);
+  const gearRef = useRef<HTMLSpanElement | null>(null);
+  const gasRef = useRef<HTMLSpanElement | null>(null);
+  const brakeRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    let raf = 0;
+    let lastNum = -1;
+    let lastGear = "";
+    const loop = () => {
+      const d = live.current;
+      const v = Math.min(180, Math.abs(d.speed));
+      if (arcRef.current) arcRef.current.style.strokeDashoffset = String(C * (1 - v / 180));
+      const n = Math.round(v);
+      if (n !== lastNum && numRef.current) {
+        lastNum = n;
+        numRef.current.textContent = String(n);
+      }
+      const gear = d.speed < -0.5 ? "R" : Math.abs(d.speed) < 1 ? "N" : "D";
+      if (gear !== lastGear && gearRef.current) {
+        lastGear = gear;
+        gearRef.current.textContent = gear;
+        gearRef.current.style.background =
+          gear === "D" ? "var(--gradient-primary)" : "oklch(1 0 0 / 0.12)";
+        gearRef.current.style.color = gear === "D" ? "oklch(0.15 0.03 255)" : "inherit";
+      }
+      if (gasRef.current)
+        gasRef.current.style.background = d.gas ? "oklch(0.82 0.16 150)" : "oklch(1 0 0 / 0.15)";
+      if (brakeRef.current)
+        brakeRef.current.style.background = d.brake ? "oklch(0.68 0.24 28)" : "oklch(1 0 0 / 0.15)";
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [live, C]);
 
   return (
-    <div className="hud-panel flex items-end gap-4 rounded-3xl px-5 py-4">
-      <div className="relative" style={{ width: 132, height: 82 }}>
-        <svg width="132" height="82" viewBox="0 0 132 82" className="overflow-visible">
+    <div className="hud-panel flex items-end gap-3 rounded-[26px] px-4 py-3">
+      <div className="relative" style={{ width: 124, height: 76 }}>
+        <svg width="124" height="76" viewBox="0 0 124 76" className="overflow-visible">
           <path
-            d={`M 12 70 A ${R} ${R} 0 0 1 120 70`}
+            d={`M 10 66 A ${R} ${R} 0 0 1 114 66`}
             fill="none"
-            stroke="oklch(1 0 0 / 0.14)"
-            strokeWidth="9"
+            stroke="oklch(1 0 0 / 0.12)"
+            strokeWidth="8"
             strokeLinecap="round"
           />
           <path
-            d={`M 12 70 A ${R} ${R} 0 0 1 120 70`}
+            ref={arcRef}
+            d={`M 10 66 A ${R} ${R} 0 0 1 114 66`}
             fill="none"
             stroke="url(#spd)"
-            strokeWidth="9"
+            strokeWidth="8"
             strokeLinecap="round"
             strokeDasharray={C}
-            strokeDashoffset={C * (1 - pct)}
-            style={{ transition: "stroke-dashoffset 110ms linear" }}
+            strokeDashoffset={C}
           />
           <defs>
             <linearGradient id="spd" x1="0" y1="0" x2="1" y2="0">
@@ -715,37 +782,38 @@ function Speedometer({
           </defs>
         </svg>
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
-          <span className="font-display text-[34px] font-bold leading-none tabular-nums">
-            {Math.round(v)}
+          <span ref={numRef} className="font-display text-[32px] font-bold leading-none tabular-nums">
+            0
           </span>
-          <span className="hud-label mt-0.5">km/h</span>
+          <span className="hud-label mt-1">km/h</span>
         </div>
       </div>
 
       <div className="flex flex-col items-center gap-2 pb-1">
         <span
-          className="grid h-9 w-9 place-items-center rounded-xl font-display text-base font-bold"
-          style={{
-            background: gear === "D" ? "var(--gradient-primary)" : "oklch(1 0 0 / 0.12)",
-            color: gear === "D" ? "oklch(0.15 0.03 255)" : "inherit",
-          }}
+          ref={gearRef}
+          className="grid h-9 w-9 place-items-center rounded-2xl font-display text-base font-bold"
+          style={{ background: "oklch(1 0 0 / 0.12)" }}
         >
-          {gear}
+          N
         </span>
         <div className="flex gap-1">
           <span
-            className="h-1.5 w-5 rounded-full transition-colors"
-            style={{ background: gas ? "oklch(0.82 0.16 150)" : "oklch(1 0 0 / 0.15)" }}
+            ref={gasRef}
+            className="h-1.5 w-5 rounded-full"
+            style={{ background: "oklch(1 0 0 / 0.15)" }}
           />
           <span
-            className="h-1.5 w-5 rounded-full transition-colors"
-            style={{ background: brake ? "oklch(0.68 0.24 28)" : "oklch(1 0 0 / 0.15)" }}
+            ref={brakeRef}
+            className="h-1.5 w-5 rounded-full"
+            style={{ background: "oklch(1 0 0 / 0.15)" }}
           />
         </div>
       </div>
     </div>
   );
-}
+});
+
 
 function Minimap({
   px,

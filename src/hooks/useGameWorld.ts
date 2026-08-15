@@ -150,7 +150,15 @@ export function useGameWorld(driving: DrivingState) {
       if (dist <= zone.radius + 100) nearby.push(zone);
     }
 
-    setState((prev) => ({ ...prev, currentZone: current, nearbyZones: nearby }));
+    setState((prev) => {
+      const sameCurrent = (prev.currentZone?.id ?? null) === (current?.id ?? null);
+      const sameNearby =
+        prev.nearbyZones.length === nearby.length &&
+        prev.nearbyZones.every((z, i) => z.id === nearby[i]?.id);
+      if (sameCurrent && sameNearby) return prev;
+      return { ...prev, currentZone: current, nearbyZones: nearby };
+    });
+
   }, [driving.position.x, driving.position.y]);
 
   return { state, zones: ZONES };

@@ -28,7 +28,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { state: driving, setTouch } = useDriving();
+  const { state: driving, live, setTouch } = useDriving();
   const { state: gameWorld, zones } = useGameWorld(driving);
   const [buckled, setBuckled] = useState(false);
   const [passengers, setPassengers] = useState<string[]>([]);
@@ -71,6 +71,8 @@ function Index() {
       >
         <World
           driving={driving}
+          live={live}
+
           passengers={passengers}
           moving={moving}
           gameWorld={gameWorld}
