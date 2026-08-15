@@ -431,8 +431,9 @@ export function World({ driving, live, passengers, gameWorld, zones }: WorldProp
                     width: 60,
                     height: 30,
                     transform: "translate(-50%,-50%)",
-                    background: "oklch(0.1 0.02 260 / 0.4)",
-                    filter: "blur(5px)",
+                    background:
+                      "radial-gradient(ellipse at 50% 50%, oklch(0.1 0.02 260 / 0.45), transparent 70%)",
+
                   }}
                 />
                 <div
